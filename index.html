@@ -9,6 +9,112 @@
 </head>
 <body class="login-page">
 
+    <div class="login-wrapper">
+        <div id="login-screen" class="glass-card">
+            <h1 class="logo">🟣 EnglishClass</h1>
+            <p class="welcome-text">Zaloguj się do swojej klasy</p>
+            
+            <div class="input-container">
+                <input type="text" id="username" placeholder="Twój login" class="purple-input">
+                <input type="password" id="password" placeholder="Twoje hasło" class="purple-input">
+            </div>
+            
+            <button onclick="login()" class="btn-primary">ZALOGUJ SIĘ</button>
+            <p id="error-msg" class="error-msg"></p>
+        </div>
+
+        <div id="lobby-screen" class="glass-card hidden">
+            <h2 id="welcome-msg" class="title">Cześć!</h2>
+            
+            <div id="teacher-tools" class="hidden">
+                <p>Z kim masz dziś lekcję?</p>
+                <input type="text" id="student-target" placeholder="Login ucznia (np. Kasia8299)" class="purple-input">
+                <button onclick="startLesson()" class="btn-teacher">OTWÓRZ KLASĘ 🚀</button>
+            </div>
+
+            <div id="student-tools" class="hidden">
+                <div id="invite-box" class="waiting-area">
+                    <div class="pulse-circle"></div>
+                    <p>Czekamy na nauczyciela...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const usersDB = {
+            "martyna73792": { pass: "nauczyciel123", role: "teacher" },
+            "Kasia8299": { pass: "uczen456", role: "student" }
+        };
+
+        const firebaseConfig = { 
+            databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let currentUser = "";
+
+        function login() {
+            const userIn = document.getElementById('username').value.trim();
+            const passIn = document.getElementById('password').value.trim();
+            const errorElement = document.getElementById('error-msg');
+
+            if (usersDB[userIn] && usersDB[userIn].pass === passIn) {
+                currentUser = userIn;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                document.getElementById('welcome-msg').innerText = "Witaj, " + currentUser;
+                
+                if (usersDB[userIn].role === "teacher") {
+                    document.getElementById('teacher-tools').classList.remove('hidden');
+                } else {
+                    document.getElementById('student-tools').classList.remove('hidden');
+                    listenForInvite();
+                }
+            } else {
+                errorElement.innerText = "Błędny login lub hasło!";
+            }
+        }
+
+        function startLesson() {
+            const student = document.getElementById('student-target').value.trim();
+            if(!student) return alert("Wpisz login ucznia!");
+            const roomId = "lekcja_" + currentUser + "_" + student;
+            db.ref('lobby/' + roomId).set({
+                teacher: currentUser, student: student, active: true, stars: 0, currentLesson: "lekcja1", slideIndex: 1
+            }).then(() => {
+                window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
+            });
+        }
+
+        function listenForInvite() {
+            db.ref('lobby').on('value', (snap) => {
+                const data = snap.val();
+                const inviteBox = document.getElementById('invite-box');
+                for (let id in data) {
+                    if (data[id].student === currentUser && data[id].active) {
+                        inviteBox.innerHTML = `
+                            <div class="invite-card">
+                                <p>🌟 <b>${data[id].teacher}</b> zaprasza!</p>
+                                <button onclick="window.location.href='classroom.html?room=${id}&user=${currentUser}'" class="btn-join">DOŁĄCZ ✅</button>
+                            </div>`;
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Szkoła Online - Logowanie</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body class="login-page">
+
     <div class="login-container">
         <div id="login-screen" class="glass-box">
             <h2 class="title">Witaj w Szkole! 🍎</h2>
