@@ -1,11 +1,73 @@
-body { font-family: 'Comic Sans MS', sans-serif; margin: 0; background: #7B2CBF; display: flex; justify-content: center; align-items: center; height: 100vh; }
-.box { background: white; padding: 40px; border-radius: 30px; text-align: center; width: 350px; }
-.hidden { display: none !important; }
-.show { display: block; }
-input, button, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 2px solid #eee; font-size: 16px; }
-button { background: #FF9100; color: white; border: none; font-weight: bold; cursor: pointer; }
-.classroom-body { background: #F0F4F8; flex-direction: column; }
-.top-bar { background: white; width: 100%; padding: 15px; display: flex; justify-content: space-around; font-weight: bold; border-bottom: 4px solid #7B2CBF; position: fixed; top: 0; }
-.main-area { margin-top: 100px; text-align: center; }
-.invite { background: #E9D5FF; padding: 15px; border-radius: 15px; border: 2px dashed #7B2CBF; }
-.star-counter { color: #7B2CBF; font-size: 24px; }
+/* Tło całej strony logowania */
+body.login-page {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #7b2cbf; /* Czysty fioletowy kolor */
+    /* Możesz też użyć gradientu dla lepszego efektu: */
+    background: linear-gradient(135deg, #5a189a 0%, #7b2cbf 100%);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Biała karta logowania na środku */
+.glass-card {
+    background: #ffffff;
+    width: 360px;
+    padding: 40px;
+    border-radius: 30px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.logo {
+    color: #5a189a;
+    font-size: 32px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.welcome-text {
+    color: #9d4edd;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+/* Fioletowe obramowania pól */
+.purple-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 2px solid #e0aaff;
+    border-radius: 12px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.purple-input:focus {
+    border-color: #7b2cbf;
+}
+
+/* Przycisk logowania */
+.btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: #7b2cbf;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    background: #5a189a;
+    transform: translateY(-2px);
+}
+
+.hidden { display: none; }
