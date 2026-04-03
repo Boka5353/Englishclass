@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>EnglishClass - Logowanie</title>
-    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* Styl wewnątrz dla pewności wyśrodkowania */
-        body.login-page {
+        /* Fioletowe tło i wyśrodkowanie */
+        body {
             margin: 0;
             display: flex;
             justify-content: center;
@@ -32,6 +31,7 @@
             border: 2px solid #e0aaff;
             border-radius: 12px;
             box-sizing: border-box;
+            outline: none;
         }
         .btn-primary {
             width: 100%;
@@ -43,18 +43,15 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: 0.3s;
         }
+        .btn-primary:hover { background: #5a189a; }
         .hidden { display: none; }
-        .invite-box {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f3e8ff;
-            border: 2px dashed #7b2cbf;
-            border-radius: 15px;
-        }
+        .error-msg { color: #ff4d4d; font-size: 13px; margin-top: 10px; font-weight: bold; }
+        .invite-box { margin-top: 20px; padding: 15px; background: #f3e8ff; border: 2px dashed #7b2cbf; border-radius: 15px; }
     </style>
 </head>
-<body class="login-page">
+<body>
 
     <div id="login-screen" class="glass-card">
         <h1 style="color: #5a189a; margin: 0;">🟣 EnglishClass</h1>
@@ -63,8 +60,8 @@
         <input type="text" id="username" placeholder="Login" class="purple-input">
         <input type="password" id="password" placeholder="Hasło" class="purple-input">
         
-        <button onclick="login()" class="btn-primary">ZALOGUJ SIĘ</button>
-        <p id="error-msg" style="color: red; font-size: 12px; margin-top: 10px;"></p>
+        <button id="login-btn" onclick="loginUser()" class="btn-primary">ZALOGUJ SIĘ</button>
+        <p id="error-msg" class="error-msg"></p>
     </div>
 
     <div id="lobby-screen" class="glass-card hidden">
@@ -78,59 +75,80 @@
 
         <div id="student-tools" class="hidden">
             <div id="invite-display" class="invite-box">
-                <p>Czekanie na zaproszenie...</p>
+                <p>Czekanie na zaproszenie od Martyny...</p>
             </div>
         </div>
     </div>
 
     <script>
+        // BAZA UŻYTKOWNIKÓW
         const usersDB = {
             "martyna73792": { pass: "nauczyciel123", role: "teacher" },
             "Kasia8299": { pass: "uczen456", role: "student" }
         };
 
+        // KONFIGURACJA FIREBASE (Wklej swój link!)
         const firebaseConfig = { 
-            databaseURL: "TU_WKLEJ_SWOJ_LINK_Z_FIREBASE" 
+            databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" 
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
         let currentUser = "";
 
-        function login() {
+        // FUNKCJA LOGOWANIA
+        function loginUser() {
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value.trim();
-            if(usersDB[u] && usersDB[u].pass === p) {
+            const err = document.getElementById('error-msg');
+
+            console.log("Próba logowania dla:", u); // Sprawdzenie w konsoli (F12)
+
+            if (usersDB[u] && usersDB[u].pass === p) {
                 currentUser = u;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('lobby-screen').classList.remove('hidden');
                 document.getElementById('welcome-msg').innerText = "Cześć " + u + "!";
                 
-                if(usersDB[u].role === "teacher") {
+                if (usersDB[u].role === "teacher") {
                     document.getElementById('teacher-tools').classList.remove('hidden');
                 } else {
                     document.getElementById('student-tools').classList.remove('hidden');
                     listenForInvite();
                 }
             } else {
-                document.getElementById('error-msg').innerText = "Błędne dane!";
+                err.innerText = "❌ Błędny login lub hasło!";
             }
         }
 
+        // START LEKCJI (DLA NAUCZYCIELA)
         function startLesson() {
             const student = document.getElementById('student-target').value.trim();
+            if (!student) { alert("Wpisz login ucznia!"); return; }
+            
             const roomId = "lekcja_" + currentUser + "_" + student;
             db.ref('lobby/' + roomId).set({
-                teacher: currentUser, student: student, active: true, stars: 0, currentLesson: "lekcja1", slideIndex: 1
+                teacher: currentUser,
+                student: student,
+                active: true,
+                stars: 0,
+                currentLesson: "lekcja1",
+                slideIndex: 1
             }).then(() => {
-                window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
+                window.location.href = "classroom.html?room=" + roomId + "&user=" + currentUser;
             });
         }
 
+        // CZEKANIE NA ZAPROSZENIE (DLA UCZNIA)
         function listenForInvite() {
             db.ref('lobby').on('value', (snap) => {
                 const data = snap.val();
-                for(let id in data) {
-                    if(data[id].student === currentUser && data[id].active) {
+                if (!data) return;
+                
+                for (let id in data) {
+                    if (data[id].student === currentUser && data[id].active) {
                         document.getElementById('invite-display').innerHTML = `
                             <p>🌟 <b>${data[id].teacher}</b> zaprasza!</p>
                             <button onclick="window.location.href='classroom.html?room=${id}&user=${currentUser}'" class="btn-primary">DOŁĄCZ ✅</button>
