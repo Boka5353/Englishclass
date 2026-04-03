@@ -1,82 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Szkoła - Lobby</title>
+    <title>Szkoła Online - Logowanie</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
+
     <div id="login-screen" class="box">
-        <h2>Witaj w Szkole! 🚀</h2>
-        <input type="text" id="username" placeholder="Wpisz swoje Imię...">
-        <button onclick="login()">WEJDŹ</button>
+        <h2>Witaj w Szkole! 🍎</h2>
+        <p>Wpisz swój login:</p>
+        <input type="text" id="username" placeholder="Login (np. martyna73792)">
+        <button onclick="login()">ZALOGUJ SIĘ</button>
+        <p id="error" style="color: red; font-size: 12px;"></p>
     </div>
 
     <div id="lobby-screen" class="box hidden">
         <h2 id="welcome-msg">Cześć!</h2>
         
         <div id="teacher-tools" class="hidden">
-            <h3>Zacznij lekcję z:</h3>
-            <input type="text" id="student-name" placeholder="Imię ucznia (np. Kasia)">
-            <button onclick="startLesson()" style="background: #FF9100;">OTWÓRZ POKÓJ 🍎</button>
+            <h3>Panel Nauczyciela</h3>
+            <p>Z kim masz dziś lekcję?</p>
+            <input type="text" id="student-name" placeholder="Wpisz login ucznia (np. Kasia8299)">
+            <button onclick="startLesson()" style="background: #FF9100;">OTWÓRZ KLASĘ 🚀</button>
         </div>
 
         <div id="student-tools" class="hidden">
-            <h3>Czekaj na nauczyciela...</h3>
+            <h3>Panel Ucznia</h3>
+            <p>Czekaj, aż nauczyciel otworzy klasę...</p>
             <div id="invite-box"></div>
         </div>
     </div>
 
     <script>
-        // KONFIGURACJA FIREBASE
-        const firebaseConfig = { databaseURL: "TWOJA_BAZA_URL" };
+        // --- KONFIGURACJA ---
+        const firebaseConfig = { 
+            // TUTAJ WKLEJ SWÓJ LINK Z FIREBASE:
+            databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let currentUser = "";
 
         function login() {
-            currentUser = document.getElementById('username').value.trim();
-            if(!currentUser) return;
+            const userInput = document.getElementById('username').value.trim();
+            const errorElement = document.getElementById('error');
             
-            document.getElementById('login-screen').className = "hidden";
-            document.getElementById('lobby-screen').className = "box";
+            if(!userInput) {
+                errorElement.innerText = "Wpisz login!";
+                return;
+            }
+
+            currentUser = userInput;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
             document.getElementById('welcome-msg').innerText = "Witaj, " + currentUser;
 
-            // Prosta logika: jeśli imię to Martyna -> Nauczyciel, reszta -> Uczeń
-            if(currentUser.toLowerCase() === "martyna") {
-                document.getElementById('teacher-tools').className = "show";
+            // SPRAWDZANIE LOGINÓW
+            if(currentUser === "martyna73792") {
+                // To jest nauczyciel
+                document.getElementById('teacher-tools').classList.remove('hidden');
             } else {
-                document.getElementById('student-tools').className = "show";
+                // To jest uczeń (Kasia lub inny login)
+                document.getElementById('student-tools').classList.remove('hidden');
                 listenForInvite();
             }
         }
 
+        // Funkcja dla Nauczyciela: Tworzy pokój w bazie
         function startLesson() {
-            const student = document.getElementById('student-name').value;
-            const roomId = "room_" + currentUser + "_" + student;
+            const student = document.getElementById('student-name').value.trim();
+            if(!student) return alert("Wpisz imię ucznia!");
+            
+            const roomId = "lekcja_" + currentUser + "_" + student;
             
             db.ref('lobby/' + roomId).set({
-                teacher: currentUser,
-                student: student,
+                nauczyciel: currentUser,
+                uczen: student,
                 active: true,
                 stars: 0,
-                slide: "https://img.freepik.com/free-vector/alphabet-letter-a-apple-concept_23-2148466185.jpg"
+                slide: "https://img.freepik.com/free-vector/hello-concept-illustration_114360-542.jpg"
             });
+
+            // Idź do klasy
             window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
         }
 
+        // Funkcja dla Ucznia: Czeka na zaproszenie
         function listenForInvite() {
             db.ref('lobby').on('value', (snap) => {
                 const data = snap.val();
+                const inviteBox = document.getElementById('invite-box');
+                inviteBox.innerHTML = ""; // Czyścimy stare zaproszenia
+
                 for(let id in data) {
-                    if(data[id].student.toLowerCase() === currentUser.toLowerCase() && data[id].active) {
-                        document.getElementById('invite-box').innerHTML = `
-                            <div class="invite">
-                                <b>${data[id].teacher}</b> zaprasza Cię! <br>
-                                <button onclick="join('${id}')">DOŁĄCZ TERAZ ✅</button>
+                    // Jeśli w bazie jest pokój dla tego ucznia i jest aktywny
+                    if(data[id].uczen === currentUser && data[id].active) {
+                        inviteBox.innerHTML = `
+                            <div style="background: #E9D5FF; padding: 20px; border-radius: 15px; border: 2px dashed #7B2CBF;">
+                                <b>Nauczyciel ${data[id].nauczyciel}</b> zaprasza Cię! <br><br>
+                                <button onclick="join('${id}')">WEJDŹ DO KLASY ✅</button>
                             </div>`;
                     }
                 }
