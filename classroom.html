@@ -2,150 +2,79 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novakid Clone - Classroom</title>
+    <title>Szkoła Online - Logowanie</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body class="class-body">
+<body>
+    <div id="login-screen" class="box">
+        <h2>Witaj w Szkole! 🍎</h2>
+        <input type="text" id="username" placeholder="Login">
+        <input type="password" id="password" placeholder="Hasło">
+        <button onclick="login()">ZALOGUJ SIĘ</button>
+        <p id="error-msg" style="color: red;"></p>
+    </div>
 
-    <div class="app-container">
-        <div class="main-area">
-            <div class="top-header">
-                <div class="stars-display" id="star-container">
-                    <span class="star" id="s1">⭐</span>
-                    <span class="star" id="s2">⭐</span>
-                    <span class="star" id="s3">⭐</span>
-                    <span class="star" id="s4">⭐</span>
-                    <span class="star" id="s5">⭐</span>
-                </div>
-            </div>
-
-            <div class="presentation-box">
-                <img id="slide-img" src="" alt="Slide">
-                <canvas id="paint-canvas"></canvas>
-            </div>
-
-            <div class="bottom-toolbar">
-                <button class="tool-btn" onclick="setTool('pen')">✏️</button>
-                <button class="tool-btn" onclick="clearCanvas()">🗑️</button>
-                <button class="tool-btn" id="mic-btn">🎤</button>
-                <button class="tool-btn end-call" onclick="exit()">📞</button>
-                
-                <div id="teacher-only-ui" class="hidden">
-                    <button onclick="changeSlide(-1)">◀</button>
-                    <span id="page-num">1/10</span>
-                    <button onclick="changeSlide(1)">▶</button>
-                    <button onclick="giveStar()" style="background: gold;">+⭐</button>
-                    <select onchange="changeLesson(this.value)">
-                        <option value="lekcja1">Lekcja 1: Hello</option>
-                        <option value="lekcja2">Lekcja 2: Colors</option>
-                    </select>
-                </div>
-            </div>
+    <div id="lobby-screen" class="box hidden">
+        <h2 id="welcome-msg"></h2>
+        <div id="teacher-tools" class="hidden">
+            <input type="text" id="student-target" placeholder="Login ucznia (Kasia8299)">
+            <button onclick="startLesson()">OTWÓRZ KLASĘ 🚀</button>
         </div>
-
-        <div class="side-panel">
-            <div class="video-wrapper teacher-v">
-                <video id="myVideo" autoplay playsinline muted></video>
-                <div class="name-tag">TY</div>
-            </div>
-            <div class="video-wrapper student-v">
-                <video id="remoteVideo" autoplay playsinline></video>
-                <div class="name-tag">ROZMÓWCA</div>
-            </div>
+        <div id="student-tools" class="hidden">
+            <div id="invite-box">Czekanie na nauczyciela...</div>
         </div>
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const roomId = params.get('room');
-        const user = params.get('user');
-        const isTeacher = (user === "martyna73792");
-
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = { databaseURL: "TWOJ_LINK_Z_FIREBASE" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const roomRef = db.ref('lobby/' + roomId);
-
-        // --- USTAWIENIA LEKCJI ---
-        let currentLesson = "lekcja1";
-        let currentSlide = 1;
-
-        if (isTeacher) document.getElementById('teacher-only-ui').classList.remove('hidden');
-
-        // Słuchanie zmian w bazie
-        roomRef.on('value', (snap) => {
-            const data = snap.val();
-            if(!data) return;
-
-            // Aktualizacja slajdu z folderu
-            currentLesson = data.currentLesson || "lekcja1";
-            currentSlide = data.slideIndex || 1;
-            document.getElementById('slide-img').src = `lekcje/${currentLesson}/${currentSlide}.jpg`;
-            document.getElementById('page-num').innerText = currentSlide;
-
-            // Aktualizacja gwiazdek
-            updateStarsUI(data.stars || 0);
-        });
-
-        // Funkcje Nauczyciela
-        function changeSlide(val) {
-            let next = currentSlide + val;
-            if(next < 1) next = 1;
-            roomRef.update({ slideIndex: next });
-        }
-
-        function changeLesson(folder) {
-            roomRef.update({ currentLesson: folder, slideIndex: 1 });
-        }
-
-        function giveStar() {
-            roomRef.child('stars').transaction(c => (c || 0) + 1);
-        }
-
-        function updateStarsUI(count) {
-            for(let i=1; i<=5; i++) {
-                document.getElementById('s'+i).style.opacity = (i <= count) ? "1" : "0.2";
-            }
-        }
-
-        // --- KAMERA ---
-        navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(s => {
-            document.getElementById('myVideo').srcObject = s;
-        });
-
-        // --- RYSOWANIE (Podstawowe) ---
-        const canvas = document.getElementById('paint-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 800; canvas.height = 600;
-
-        canvas.onmousedown = () => canvas.isDrawing = true;
-        canvas.onmouseup = () => canvas.isDrawing = false;
-        canvas.onmousemove = (e) => {
-            if(!canvas.isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            // Wysyłanie punktu do Firebase (prosta wersja)
-            roomRef.child('drawing').push({x, y, color: isTeacher ? 'blue' : 'red'});
+        const usersDB = {
+            "martyna73792": { pass: "nauczyciel123", role: "teacher" },
+            "Kasia8299": { pass: "uczen456", role: "student" }
         };
 
-        roomRef.child('drawing').on('child_added', (s) => {
-            const p = s.val();
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
-        });
+        const firebaseConfig = { databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let currentUser = "";
 
-        function clearCanvas() {
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            if(isTeacher) roomRef.child('drawing').remove();
+        function login() {
+            const userIn = document.getElementById('username').value.trim();
+            const passIn = document.getElementById('password').value.trim();
+            if (usersDB[userIn] && usersDB[userIn].pass === passIn) {
+                currentUser = userIn;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                document.getElementById('welcome-msg').innerText = "Cześć " + userIn;
+                if (usersDB[userIn].role === "teacher") {
+                    document.getElementById('teacher-tools').classList.remove('hidden');
+                } else {
+                    document.getElementById('student-tools').classList.remove('hidden');
+                    listenForInvite();
+                }
+            } else { alert("Błędne dane!"); }
         }
 
-        function exit() { window.location.href = "index.html"; }
+        function startLesson() {
+            const student = document.getElementById('student-target').value.trim();
+            const roomId = "lekcja_" + currentUser + "_" + student;
+            db.ref('lobby/' + roomId).set({
+                teacher: currentUser, student: student, active: true, stars: 0, currentLesson: "lekcja1", slideIndex: 1
+            });
+            window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
+        }
+
+        function listenForInvite() {
+            db.ref('lobby').on('value', (snap) => {
+                const data = snap.val();
+                for (let id in data) {
+                    if (data[id].student === currentUser && data[id].active) {
+                        document.getElementById('invite-box').innerHTML = `
+                            <button onclick="window.location.href='classroom.html?room=${id}&user=${currentUser}'">WEJDŹ DO KLASY ✅</button>`;
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
