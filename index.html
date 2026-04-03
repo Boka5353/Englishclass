@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Szkoła - Lobby</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <div id="login-screen" class="box">
+        <h2>Witaj w Szkole! 🚀</h2>
+        <input type="text" id="username" placeholder="Wpisz swoje Imię...">
+        <button onclick="login()">WEJDŹ</button>
+    </div>
+
+    <div id="lobby-screen" class="box hidden">
+        <h2 id="welcome-msg">Cześć!</h2>
+        
+        <div id="teacher-tools" class="hidden">
+            <h3>Zacznij lekcję z:</h3>
+            <input type="text" id="student-name" placeholder="Imię ucznia (np. Kasia)">
+            <button onclick="startLesson()" style="background: #FF9100;">OTWÓRZ POKÓJ 🍎</button>
+        </div>
+
+        <div id="student-tools" class="hidden">
+            <h3>Czekaj na nauczyciela...</h3>
+            <div id="invite-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // KONFIGURACJA FIREBASE
+        const firebaseConfig = { databaseURL: "TWOJA_BAZA_URL" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentUser = "";
+
+        function login() {
+            currentUser = document.getElementById('username').value.trim();
+            if(!currentUser) return;
+            
+            document.getElementById('login-screen').className = "hidden";
+            document.getElementById('lobby-screen').className = "box";
+            document.getElementById('welcome-msg').innerText = "Witaj, " + currentUser;
+
+            // Prosta logika: jeśli imię to Martyna -> Nauczyciel, reszta -> Uczeń
+            if(currentUser.toLowerCase() === "martyna") {
+                document.getElementById('teacher-tools').className = "show";
+            } else {
+                document.getElementById('student-tools').className = "show";
+                listenForInvite();
+            }
+        }
+
+        function startLesson() {
+            const student = document.getElementById('student-name').value;
+            const roomId = "room_" + currentUser + "_" + student;
+            
+            db.ref('lobby/' + roomId).set({
+                teacher: currentUser,
+                student: student,
+                active: true,
+                stars: 0,
+                slide: "https://img.freepik.com/free-vector/alphabet-letter-a-apple-concept_23-2148466185.jpg"
+            });
+            window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
+        }
+
+        function listenForInvite() {
+            db.ref('lobby').on('value', (snap) => {
+                const data = snap.val();
+                for(let id in data) {
+                    if(data[id].student.toLowerCase() === currentUser.toLowerCase() && data[id].active) {
+                        document.getElementById('invite-box').innerHTML = `
+                            <div class="invite">
+                                <b>${data[id].teacher}</b> zaprasza Cię! <br>
+                                <button onclick="join('${id}')">DOŁĄCZ TERAZ ✅</button>
+                            </div>`;
+                    }
+                }
+            });
+        }
+
+        function join(id) {
+            window.location.href = `classroom.html?room=${id}&user=${currentUser}`;
+        }
+    </script>
+</body>
+</html>
