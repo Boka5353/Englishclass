@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Klasa - EnglishClass</title>
+    <title>Klasa Online</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -10,19 +10,19 @@
 <body class="class-body">
     <div class="app-container">
         <div class="main-area">
-            <div class="stars-display" id="stars">
+            <div class="stars-display">
                 <span id="s1">⭐</span><span id="s2">⭐</span><span id="s3">⭐</span><span id="s4">⭐</span><span id="s5">⭐</span>
             </div>
             <div class="presentation-box">
-                <img id="slide-img" src="" style="max-width:100%; border-radius:15px;">
+                <img id="slide-img" src="">
                 <canvas id="paint-canvas"></canvas>
             </div>
             <div class="bottom-toolbar">
-                <div id="teacher-controls" class="hidden">
+                <div id="teacher-ui" class="hidden">
                     <button onclick="changeSlide(-1)">◀</button>
                     <span id="page-num">1</span>
                     <button onclick="changeSlide(1)">▶</button>
-                    <button onclick="giveStar()" style="background:gold;">+⭐</button>
+                    <button onclick="giveStar()">+⭐</button>
                     <select onchange="changeLesson(this.value)">
                         <option value="lekcja1">Lekcja 1</option>
                         <option value="lekcja2">Lekcja 2</option>
@@ -30,10 +30,9 @@
                 </div>
             </div>
         </div>
-
         <div class="side-panel">
-            <div class="video-wrapper"><video id="localVid" autoplay muted></video></div>
-            <div class="video-wrapper"><video id="remoteVid" autoplay></video></div>
+            <div class="video-wrapper"><video id="myVideo" autoplay muted></video></div>
+            <div class="video-wrapper"><video id="remoteVideo" autoplay></video></div>
         </div>
     </div>
 
@@ -43,14 +42,14 @@
         const user = params.get('user');
         const isTeacher = (user === "martyna73792");
 
-        const firebaseConfig = { databaseURL: "TU_WKLEJ_SWOJ_LINK_Z_FIREBASE" };
-        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const firebaseConfig = { databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const roomRef = db.ref('lobby/' + roomId);
 
-        if(isTeacher) document.getElementById('teacher-controls').classList.remove('hidden');
+        if(isTeacher) document.getElementById('teacher-ui').classList.remove('hidden');
 
-        // Synchronizacja
+        // ODBIERANIE DANYCH (Dla Nauczyciela i Ucznia)
         roomRef.on('value', (snap) => {
             const data = snap.val();
             if(!data) return;
@@ -61,96 +60,20 @@
             }
         });
 
-        function changeSlide(v) {
-            roomRef.child('slideIndex').transaction(c => (c+v < 1) ? 1 : c+v);
+        function changeSlide(val) {
+            roomRef.child('slideIndex').transaction(c => ((c || 1) + val < 1) ? 1 : (c || 1) + val);
         }
+
         function giveStar() {
             roomRef.child('stars').transaction(c => (c || 0) + 1);
         }
-        function changeLesson(l) {
-            roomRef.update({ currentLesson: l, slideIndex: 1 });
+
+        function changeLesson(lesson) {
+            roomRef.update({ currentLesson: lesson, slideIndex: 1 });
         }
 
         navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(s => {
-            document.getElementById('localVid').srcObject = s;
-        });
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Klasa - EnglishClass</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-</head>
-<body class="class-body">
-    <div class="app-container">
-        <div class="main-area">
-            <div class="stars-display" id="stars">
-                <span id="s1">⭐</span><span id="s2">⭐</span><span id="s3">⭐</span><span id="s4">⭐</span><span id="s5">⭐</span>
-            </div>
-            <div class="presentation-box">
-                <img id="slide-img" src="" style="max-width:100%; border-radius:15px;">
-                <canvas id="paint-canvas"></canvas>
-            </div>
-            <div class="bottom-toolbar">
-                <div id="teacher-controls" class="hidden">
-                    <button onclick="changeSlide(-1)">◀</button>
-                    <span id="page-num">1</span>
-                    <button onclick="changeSlide(1)">▶</button>
-                    <button onclick="giveStar()" style="background:gold;">+⭐</button>
-                    <select onchange="changeLesson(this.value)">
-                        <option value="lekcja1">Lekcja 1</option>
-                        <option value="lekcja2">Lekcja 2</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="side-panel">
-            <div class="video-wrapper"><video id="localVid" autoplay muted></video></div>
-            <div class="video-wrapper"><video id="remoteVid" autoplay></video></div>
-        </div>
-    </div>
-
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const roomId = params.get('room');
-        const user = params.get('user');
-        const isTeacher = (user === "martyna73792");
-
-        const firebaseConfig = { databaseURL: "TU_WKLEJ_SWOJ_LINK_Z_FIREBASE" };
-        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const roomRef = db.ref('lobby/' + roomId);
-
-        if(isTeacher) document.getElementById('teacher-controls').classList.remove('hidden');
-
-        // Synchronizacja
-        roomRef.on('value', (snap) => {
-            const data = snap.val();
-            if(!data) return;
-            document.getElementById('slide-img').src = `lekcje/${data.currentLesson}/${data.slideIndex}.jpg`;
-            document.getElementById('page-num').innerText = data.slideIndex;
-            for(let i=1; i<=5; i++) {
-                document.getElementById('s'+i).style.opacity = (i <= data.stars) ? "1" : "0.2";
-            }
-        });
-
-        function changeSlide(v) {
-            roomRef.child('slideIndex').transaction(c => (c+v < 1) ? 1 : c+v);
-        }
-        function giveStar() {
-            roomRef.child('stars').transaction(c => (c || 0) + 1);
-        }
-        function changeLesson(l) {
-            roomRef.update({ currentLesson: l, slideIndex: 1 });
-        }
-
-        navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(s => {
-            document.getElementById('localVid').srcObject = s;
+            document.getElementById('myVideo').srcObject = s;
         });
     </script>
 </body>
