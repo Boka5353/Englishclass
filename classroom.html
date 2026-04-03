@@ -2,153 +2,125 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novakid Style - Classroom</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* --- TOTALNE PRZYWRÓCENIE FAJNEGO STYLU (NEONY & OBRAMOWANIA) --- */
+        /* --- STYLIZACJA UKŁADU --- */
         * { box-sizing: border-box; }
-        body.class-body { 
+        body { 
             margin: 0; 
             font-family: 'Poppins', sans-serif; 
             background: #f0f4f8; 
-            overflow: hidden; 
             height: 100vh;
+            overflow: hidden;
         }
-        
-        .app-container { 
-            display: flex; 
-            height: 100vh; 
-            width: 100vw; 
+
+        .app-container {
+            display: flex; /* Dzieli stronę na Lewo i Prawo */
+            height: 100vh;
+            width: 100vw;
             padding: 20px;
             gap: 20px;
         }
 
-        /* --- LEWA STRONA: PREZENTACJA --- */
-        .main-area { 
-            flex: 3; 
-            display: flex; 
-            flex-direction: column; 
+        /* LEWA STRONA - SLAJDY (Na środku) */
+        .main-area {
+            flex: 3; /* Zajmuje 3 części miejsca */
+            display: flex;
+            flex-direction: column;
             background: white;
             border-radius: 25px;
+            border: 4px solid #e0e6ed;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             overflow: hidden;
-            border: 4px solid #e0e6ed;
-        }
-        
-        /* Pasek gwiazdek (Wyśrodkowany) */
-        .stars-header { 
-            height: 60px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 15px; 
-            background: #f8fafc;
-            border-bottom: 2px solid #e0e6ed;
-        }
-        .star { 
-            font-size: 35px; 
-            opacity: 0.15; 
-            transition: 0.3s; 
-            filter: grayscale(1);
-        }
-        .star.active { 
-            opacity: 1; 
-            filter: grayscale(0); 
-            transform: scale(1.2);
-            text-shadow: 0 0 15px #ffca28;
         }
 
-        /* Obszar slajdu */
-        .presentation-box { 
-            flex: 1; 
-            position: relative; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            overflow: hidden;
+        .stars-header {
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            background: #f8fafc;
+        }
+        .star { font-size: 35px; opacity: 0.15; transition: 0.3s; }
+        .star.active { opacity: 1; transform: scale(1.2); text-shadow: 0 0 15px #ffca28; }
+
+        .presentation-box {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             background: #fafafa;
         }
-        #slide-img { 
-            max-width: 100%; 
-            max-height: 100%; 
-            object-fit: contain; 
-        }
-        #paint-canvas { 
-            position: absolute; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            cursor: crosshair; 
-        }
+        #slide-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        /* Dolny pasek (Szary, zaokrąglony) */
-        .bottom-toolbar { 
-            height: 100px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 20px; 
+        .bottom-toolbar {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
             background: #f8fafc;
             border-top: 2px solid #e0e6ed;
         }
-        .tool-btn { 
-            background: white; border: none; border-radius: 50%; 
-            width: 60px; height: 60px; 
-            font-size: 24px; cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            transition: 0.2s;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .tool-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
-        
-        .teacher-panel { 
-            display: flex; align-items: center; gap: 15px; 
-            background: #e2e8f0; 
-            padding: 10px 25px; 
-            border-radius: 50px; 
-        }
 
-        /* --- PRAWA STRONA: WIDEO (FAJNE OBRAMOWANIA) --- */
-        .side-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
+        /* PRAWA STRONA - KAMERKI (Jedna pod drugą) */
+        .side-panel {
+            flex: 1; /* Zajmuje 1 część miejsca */
+            display: flex;
+            flex-direction: column; /* Ustawia kamerki w pionie */
+            gap: 20px;
             justify-content: center;
         }
-        
-        .video-wrapper { 
-            width: 100%; 
-            aspect-ratio: 4/3; 
-            background: #1a1a1a; 
-            border-radius: 25px; 
-            overflow: hidden; 
-            position: relative; 
-            /* FIOLETOWE NEONOWE OBRAMOWANIE */
-            border: 6px solid #7b2cbf; 
-            box-shadow: 0 0 20px rgba(123, 44, 191, 0.5);
+
+        .video-wrapper {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #1a1a1a;
+            border-radius: 25px;
+            position: relative;
+            overflow: hidden;
         }
-        
-        /* Ramka ucznia (Pomarańczowa) */
-        .video-wrapper.student-frame {
-            border-color: #ff9100;
-            box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
+
+        /* Fioletowa ramka Nauczyciela */
+        .teacher-frame {
+            border: 6px solid #7b2cbf;
+            box-shadow: 0 0 20px rgba(123, 44, 191, 0.6);
+        }
+
+        /* Pomarańczowa ramka Ucznia */
+        .student-frame {
+            border: 6px solid #ff9100;
+            box-shadow: 0 0 20px rgba(255, 145, 0, 0.6);
         }
 
         video { width: 100%; height: 100%; object-fit: cover; }
-        
-        .name-tag { 
-            position: absolute; 
-            bottom: 15px; left: 15px; 
-            background: rgba(0,0,0,0.7); 
-            color: white; 
-            padding: 5px 12px; 
-            border-radius: 8px; 
-            font-size: 12px; font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+
+        .name-tag {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
         }
 
+        /* PRZYCISKI STEROWANIA */
+        .tool-btn {
+            background: white; border: none; border-radius: 50%;
+            width: 55px; height: 55px; font-size: 22px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .teacher-panel {
+            display: flex; align-items: center; gap: 15px;
+            background: #e2e8f0; padding: 10px 20px; border-radius: 50px;
+        }
         .hidden { display: none; }
     </style>
 </head>
@@ -165,7 +137,7 @@
             </div>
 
             <div class="presentation-box">
-                <img id="slide-img" src="" alt="Ladowanie lekcji...">
+                <img id="slide-img" src="" alt="Ładowanie...">
                 <canvas id="paint-canvas"></canvas>
             </div>
 
@@ -175,25 +147,25 @@
                 
                 <div id="teacher-only" class="teacher-panel hidden">
                     <button onclick="changeSlide(-1)" class="tool-btn">◀</button>
-                    <span id="page-num" style="font-weight: bold; font-size: 20px; min-width: 40px; text-align: center; color: #5a189a;">1</span>
+                    <span id="page-num" style="font-weight: bold; color: #5a189a;">1</span>
                     <button onclick="changeSlide(1)" class="tool-btn">▶</button>
-                    <button onclick="giveStar()" class="tool-btn" style="background: #ffd700; font-size: 28px;">⭐</button>
-                    <select onchange="changeLesson(this.value)" style="padding: 12px; border-radius: 12px; border: 2px solid #cbd5e1; cursor: pointer;">
+                    <button onclick="giveStar()" class="tool-btn" style="background: gold;">⭐</button>
+                    <select onchange="changeLesson(this.value)" style="padding: 8px; border-radius: 10px;">
                         <option value="lekcja1">Lekcja 1</option>
                         <option value="lekcja2">Lekcja 2</option>
-                        <option value="lekcja3">Lekcja 3</option>
                     </select>
                 </div>
-
+                
                 <button class="tool-btn" style="background: #ff4757; color: white;" onclick="location.href='index.html'">📞</button>
             </div>
         </div>
 
         <div class="side-panel">
-            <div class="video-wrapper">
+            <div class="video-wrapper teacher-frame">
                 <video id="localVideo" autoplay muted playsinline></video>
                 <div class="name-tag">NAUCZYCIEL</div>
             </div>
+            
             <div class="video-wrapper student-frame">
                 <video id="remoteVideo" autoplay playsinline></video>
                 <div class="name-tag">UCZEŃ</div>
@@ -202,12 +174,11 @@
     </div>
 
     <script>
-        // --- TWOJE DANE FIREBASE (Wklej tutaj!) ---
+        // --- KONFIGURACJA FIREBASE ---
         const firebaseConfig = { 
-            databaseURL: "TU_WKLEJ_SWOJ_LINK_Z_FIREBASE" 
+            databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" 
         };
         
-        // --- SKRYPT LOGIKI (Zostaw bez zmian) ---
         const params = new URLSearchParams(window.location.search);
         const roomId = params.get('room');
         const user = params.get('user');
@@ -219,10 +190,37 @@
 
         if (isTeacher) document.getElementById('teacher-only').classList.remove('hidden');
 
-        // Słuchanie bazy
+        // Synchronizacja
         roomRef.on('value', (snap) => {
             const data = snap.val();
             if(!data) return;
-
             document.getElementById('slide-img').src = `lekcje/${data.currentLesson}/${data.slideIndex}.jpg`;
             document.getElementById('page-num').innerText = data.slideIndex;
+            for(let i=1; i<=5; i++) {
+                const s = document.getElementById('s' + i);
+                if(i <= data.stars) s.classList.add('active');
+                else s.classList.remove('active');
+            }
+        });
+
+        function changeSlide(v) {
+            if(!isTeacher) return;
+            roomRef.child('slideIndex').transaction(c => (c+v < 1) ? 1 : c+v);
+        }
+
+        function giveStar() {
+            if(!isTeacher) return;
+            roomRef.child('stars').transaction(c => ((c || 0) >= 5) ? 0 : (c || 0) + 1);
+        }
+
+        function changeLesson(l) {
+            if(!isTeacher) return;
+            roomRef.update({ currentLesson: l, slideIndex: 1 });
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(s => { document.getElementById('localVideo').srcObject = s; })
+            .catch(e => console.log("Błąd kamery"));
+    </script>
+</body>
+</html>
