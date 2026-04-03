@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Klasa Online</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body class="classroom-body">
+
+    <div class="top-bar">
+        <div id="room-name">Pokój Lekcyjny</div>
+        <div class="star-counter">GWIAZDKI: <span id="star-num">0</span> ⭐</div>
+    </div>
+
+    <div class="main-area">
+        <div id="teacher-controls" class="hidden">
+            <button onclick="addStar()">DODAJ GWIAZDKĘ ⭐</button>
+            <select onchange="changeSlide(this.value)">
+                <option value="https://img.freepik.com/free-vector/alphabet-letter-a-apple-concept_23-2148466185.jpg">Lekcja: Jabłko</option>
+                <option value="https://img.freepik.com/free-vector/alphabet-letter-b-ball-concept_23-2148471180.jpg">Lekcja: Piłka</option>
+            </select>
+        </div>
+        
+        <img id="current-slide" src="" style="max-width: 80%; border-radius: 20px;">
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('room');
+        const user = params.get('user');
+
+        const firebaseConfig = { databaseURL: "TWOJA_BAZA_URL" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Jeśli to Martyna, pokaż przyciski sterowania
+        if(user.toLowerCase() === "martyna") {
+            document.getElementById('teacher-controls').className = "show";
+        }
+
+        // Synchronizacja na żywo
+        db.ref('lobby/' + roomId).on('value', (snap) => {
+            const data = snap.val();
+            if(data) {
+                document.getElementById('star-num').innerText = data.stars;
+                document.getElementById('current-slide').src = data.slide;
+            }
+        });
+
+        function addStar() {
+            db.ref('lobby/' + roomId + '/stars').transaction(c => (c || 0) + 1);
+        }
+
+        function changeSlide(url) {
+            db.ref('lobby/' + roomId).update({ slide: url });
+        }
+    </script>
+</body>
+</html>
