@@ -2,79 +2,79 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Szkoła Online - Logowanie</title>
+    <title>Klasa Online</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body>
-    <div id="login-screen" class="box">
-        <h2>Witaj w Szkole! 🍎</h2>
-        <input type="text" id="username" placeholder="Login">
-        <input type="password" id="password" placeholder="Hasło">
-        <button onclick="login()">ZALOGUJ SIĘ</button>
-        <p id="error-msg" style="color: red;"></p>
-    </div>
-
-    <div id="lobby-screen" class="box hidden">
-        <h2 id="welcome-msg"></h2>
-        <div id="teacher-tools" class="hidden">
-            <input type="text" id="student-target" placeholder="Login ucznia (Kasia8299)">
-            <button onclick="startLesson()">OTWÓRZ KLASĘ 🚀</button>
+<body class="class-body">
+    <div class="app-container">
+        <div class="main-area">
+            <div class="stars-display">
+                <span id="s1">⭐</span><span id="s2">⭐</span><span id="s3">⭐</span><span id="s4">⭐</span><span id="s5">⭐</span>
+            </div>
+            <div class="presentation-box">
+                <img id="slide-img" src="">
+                <canvas id="paint-canvas"></canvas>
+            </div>
+            <div class="bottom-toolbar">
+                <div id="teacher-ui" class="hidden">
+                    <button onclick="changeSlide(-1)">◀</button>
+                    <span id="page-num">1</span>
+                    <button onclick="changeSlide(1)">▶</button>
+                    <button onclick="giveStar()">+⭐</button>
+                    <select onchange="changeLesson(this.value)">
+                        <option value="lekcja1">Lekcja 1</option>
+                        <option value="lekcja2">Lekcja 2</option>
+                    </select>
+                </div>
+            </div>
         </div>
-        <div id="student-tools" class="hidden">
-            <div id="invite-box">Czekanie na nauczyciela...</div>
+        <div class="side-panel">
+            <div class="video-wrapper"><video id="myVideo" autoplay muted></video></div>
+            <div class="video-wrapper"><video id="remoteVideo" autoplay></video></div>
         </div>
     </div>
 
     <script>
-        const usersDB = {
-            "martyna73792": { pass: "nauczyciel123", role: "teacher" },
-            "Kasia8299": { pass: "uczen456", role: "student" }
-        };
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('room');
+        const user = params.get('user');
+        const isTeacher = (user === "martyna73792");
 
         const firebaseConfig = { databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentUser = "";
+        const roomRef = db.ref('lobby/' + roomId);
 
-        function login() {
-            const userIn = document.getElementById('username').value.trim();
-            const passIn = document.getElementById('password').value.trim();
-            if (usersDB[userIn] && usersDB[userIn].pass === passIn) {
-                currentUser = userIn;
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('lobby-screen').classList.remove('hidden');
-                document.getElementById('welcome-msg').innerText = "Cześć " + userIn;
-                if (usersDB[userIn].role === "teacher") {
-                    document.getElementById('teacher-tools').classList.remove('hidden');
-                } else {
-                    document.getElementById('student-tools').classList.remove('hidden');
-                    listenForInvite();
-                }
-            } else { alert("Błędne dane!"); }
+        if(isTeacher) document.getElementById('teacher-ui').classList.remove('hidden');
+
+        // ODBIERANIE DANYCH (Dla Nauczyciela i Ucznia)
+        roomRef.on('value', (snap) => {
+            const data = snap.val();
+            if(!data) return;
+            document.getElementById('slide-img').src = `lekcje/${data.currentLesson}/${data.slideIndex}.jpg`;
+            document.getElementById('page-num').innerText = data.slideIndex;
+            for(let i=1; i<=5; i++) {
+                document.getElementById('s'+i).style.opacity = (i <= data.stars) ? "1" : "0.2";
+            }
+        });
+
+        function changeSlide(val) {
+            roomRef.child('slideIndex').transaction(c => ((c || 1) + val < 1) ? 1 : (c || 1) + val);
         }
 
-        function startLesson() {
-            const student = document.getElementById('student-target').value.trim();
-            const roomId = "lekcja_" + currentUser + "_" + student;
-            db.ref('lobby/' + roomId).set({
-                teacher: currentUser, student: student, active: true, stars: 0, currentLesson: "lekcja1", slideIndex: 1
-            });
-            window.location.href = `classroom.html?room=${roomId}&user=${currentUser}`;
+        function giveStar() {
+            roomRef.child('stars').transaction(c => (c || 0) + 1);
         }
 
-        function listenForInvite() {
-            db.ref('lobby').on('value', (snap) => {
-                const data = snap.val();
-                for (let id in data) {
-                    if (data[id].student === currentUser && data[id].active) {
-                        document.getElementById('invite-box').innerHTML = `
-                            <button onclick="window.location.href='classroom.html?room=${id}&user=${currentUser}'">WEJDŹ DO KLASY ✅</button>`;
-                    }
-                }
-            });
+        function changeLesson(lesson) {
+            roomRef.update({ currentLesson: lesson, slideIndex: 1 });
         }
+
+        navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(s => {
+            document.getElementById('myVideo').srcObject = s;
+        });
     </script>
 </body>
 </html>
