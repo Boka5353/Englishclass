@@ -7,25 +7,38 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body>
-    <div id="login-screen" class="box">
-        <h2>Witaj w Szkole! 🍎</h2>
-        <input type="text" id="username" placeholder="Login">
-        <input type="password" id="password" placeholder="Hasło">
-        <button onclick="login()">ZALOGUJ SIĘ</button>
-        <p id="error-msg" style="color: red;"></p>
-    </div>
+<body class="login-page">
 
-    <div id="lobby-screen" class="box hidden">
-        <h2 id="welcome-msg"></h2>
-        <div id="teacher-tools" class="hidden">
-            <h3>Panel Nauczyciela</h3>
-            <input type="text" id="student-target" placeholder="Wpisz login ucznia (Kasia8299)">
-            <button onclick="startLesson()" style="background: #FF9100;">OTWÓRZ KLASĘ 🚀</button>
+    <div class="login-container">
+        <div id="login-screen" class="glass-box">
+            <h2 class="title">Witaj w Szkole! 🍎</h2>
+            <p class="subtitle">Zaloguj się, aby rozpocząć lekcję</p>
+            
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Twój login" class="styled-input">
+                <input type="password" id="password" placeholder="Twoje hasło" class="styled-input">
+            </div>
+            
+            <button onclick="login()" class="main-btn">ZALOGUJ SIĘ</button>
+            <p id="error-msg" class="error-text"></p>
         </div>
-        <div id="student-tools" class="hidden">
-            <h3>Panel Ucznia</h3>
-            <div id="invite-box">Czekanie na zaproszenie...</div>
+
+        <div id="lobby-screen" class="glass-box hidden">
+            <h2 id="welcome-msg" class="title">Cześć!</h2>
+            
+            <div id="teacher-tools" class="hidden">
+                <p class="subtitle">Przygotuj lekcję dla ucznia:</p>
+                <input type="text" id="student-target" placeholder="Login ucznia (np. Kasia8299)" class="styled-input">
+                <button onclick="startLesson()" class="teacher-btn">OTWÓRZ KLASĘ 🚀</button>
+            </div>
+
+            <div id="student-tools" class="hidden">
+                <p class="subtitle">Twój nauczyciel przygotowuje klasę...</p>
+                <div id="invite-box" class="pulse-animation">
+                    <div class="loader-icon">⚙️</div>
+                    <p>Czekanie na zaproszenie...</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -35,7 +48,6 @@
             "Kasia8299": { pass: "uczen456", role: "student" }
         };
 
-        // SPRAWDŹ TEN LINK - musi być taki jak w Twojej konsoli!
         const firebaseConfig = { 
             databaseURL: "https://moja-szkola-class-default-rtdb.europe-west1.firebasedatabase.app/" 
         };
@@ -46,11 +58,13 @@
         function login() {
             const userIn = document.getElementById('username').value.trim();
             const passIn = document.getElementById('password').value.trim();
+            const errorElement = document.getElementById('error-msg');
+
             if (usersDB[userIn] && usersDB[userIn].pass === passIn) {
                 currentUser = userIn;
                 document.getElementById('login-screen').style.display = "none";
                 document.getElementById('lobby-screen').classList.remove('hidden');
-                document.getElementById('welcome-msg').innerText = "Cześć " + userIn;
+                document.getElementById('welcome-msg').innerText = "Witaj, " + currentUser + "!";
                 
                 if (usersDB[userIn].role === "teacher") {
                     document.getElementById('teacher-tools').classList.remove('hidden');
@@ -59,15 +73,13 @@
                     listenForInvite();
                 }
             } else {
-                document.getElementById('error-msg').innerText = "Błędny login lub hasło!";
+                errorElement.innerText = "❌ Ups! Błędny login lub hasło.";
             }
         }
 
         function startLesson() {
             const student = document.getElementById('student-target').value.trim();
             if(!student) return alert("Wpisz login ucznia!");
-            
-            // Tworzymy unikalne ID pokoju
             const roomId = "lekcja_" + currentUser + "_" + student;
             
             db.ref('lobby/' + roomId).set({
@@ -86,15 +98,13 @@
             db.ref('lobby').on('value', (snap) => {
                 const data = snap.val();
                 const inviteBox = document.getElementById('invite-box');
-                inviteBox.innerHTML = "Szukanie lekcji...";
 
                 for (let id in data) {
-                    // Kluczowe: uczeń szuka wpisu, gdzie jego login zgadza się z polem 'student'
                     if (data[id].student === currentUser && data[id].active) {
                         inviteBox.innerHTML = `
-                            <div style="background: #E9D5FF; padding: 15px; border-radius: 10px; border: 2px dashed #7B2CBF;">
-                                <b>Nauczyciel ${data[id].teacher} zaprasza!</b><br><br>
-                                <button onclick="joinClass('${id}')">WEJDŹ DO KLASY ✅</button>
+                            <div class="invite-card">
+                                <p>🌟 <b>${data[id].teacher}</b> zaprasza Cię!</p>
+                                <button onclick="joinClass('${id}')" class="join-btn">WEJDŹ DO KLASY ✅</button>
                             </div>`;
                     }
                 }
